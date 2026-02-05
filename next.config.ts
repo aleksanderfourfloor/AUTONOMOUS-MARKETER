@@ -1,14 +1,7 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "http://localhost:8000/:path*", // Proxy to Backend
-      },
-    ];
-  },
-};
+// Local-only config: do not proxy /api to a separate backend.
+// If you later run a FastAPI server, you can reintroduce a rewrite here.
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
