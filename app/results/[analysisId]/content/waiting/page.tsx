@@ -25,6 +25,7 @@ export default function ContentWaitingPage() {
   const [gaveUp, setGaveUp] = React.useState(false);
 
   React.useEffect(() => {
+    if (!analysisId) return;
     let cancelled = false;
     const timeout = window.setTimeout(() => {
       if (!cancelled) {
@@ -42,7 +43,9 @@ export default function ContentWaitingPage() {
       if (cancelled || gaveUpRef.current) return;
       try {
         const res = await fetch(
-          `/api/social-content?analysisId=${encodeURIComponent(analysisId)}`
+          `/api/social-content?analysisId=${encodeURIComponent(
+            analysisId as string
+          )}`
         );
         if (!res.ok) {
           schedulePoll();
@@ -77,8 +80,16 @@ export default function ContentWaitingPage() {
   if (!analysisId) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Waiting for content</h1>
-        <p className="text-sm text-zinc-600">Missing analysis ID. <Link href="/" className="text-blue-700 hover:underline">Go to Dashboard</Link>.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Waiting for content
+        </h1>
+        <p className="text-sm text-zinc-600">
+          Missing analysis ID.{" "}
+          <Link href="/" className="text-blue-700 hover:underline">
+            Go to Dashboard
+          </Link>
+          .
+        </p>
       </div>
     );
   }
