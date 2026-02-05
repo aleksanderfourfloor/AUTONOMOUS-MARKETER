@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useAppStore } from "../../../state/store";
 import { useToast } from "../../../state/toast";
 import {
@@ -15,6 +15,7 @@ import {
 
 export default function ContentFromResultsPage() {
   const params = useParams();
+  const router = useRouter();
   const analysisId = params?.analysisId as string | undefined;
   const toast = useToast();
   const { analyses, competitors } = useAppStore();
@@ -31,6 +32,17 @@ export default function ContentFromResultsPage() {
   const [responseText, setResponseText] = React.useState<string | null>(null);
   const [savedViewUrl, setSavedViewUrl] = React.useState<string | null>(null);
 
+  // When analysis is missing from store we still allow generate with minimal payload (analysisId from URL).
+  const selectedCompetitors = analysis
+    ? (analysis.competitorIds
+        .map((id) => competitors.find((c) => c.id === id))
+        .filter(Boolean) as {
+        id: number;
+        name: string;
+        website_url?: string | null;
+      }[])
+    : [];
+
   if (!analysisId) {
     return (
       <div className="space-y-4">
@@ -39,7 +51,10 @@ export default function ContentFromResultsPage() {
         </h1>
         <div className="rounded-md border border-dashed border-zinc-200 p-6 text-sm text-zinc-600">
           Missing analysis ID in the URL. Go back to{" "}
-          <Link href="/" className="font-semibold text-blue-700 hover:underline">
+          <Link
+            href="/"
+            className="font-semibold text-blue-700 hover:underline"
+          >
             Dashboard
           </Link>{" "}
           or run an analysis first.
@@ -47,34 +62,6 @@ export default function ContentFromResultsPage() {
       </div>
     );
   }
-
-  if (!analysis) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Create marketing content
-        </h1>
-        <div className="rounded-md border border-dashed border-zinc-200 p-6 text-sm text-zinc-600">
-          Analysis not found. Go back to the{" "}
-          <Link
-            href="/analysis"
-            className="font-semibold text-blue-700 hover:underline"
-          >
-            analysis page
-          </Link>{" "}
-          and run a project first.
-        </div>
-      </div>
-    );
-  }
-
-  const selectedCompetitors = analysis.competitorIds
-    .map((id) => competitors.find((c) => c.id === id))
-    .filter(Boolean) as {
-    id: number;
-    name: string;
-    website_url?: string | null;
-  }[];
 
   function toggleChannel(id: string) {
     setChannels((prev) =>
@@ -94,25 +81,42 @@ export default function ContentFromResultsPage() {
     setResponseText(null);
     setSavedViewUrl(null);
     try {
+      const payload = {
+        type: "social_content_from_results",
+        analysis: analysis
+          ? {
+              id: analysis.id,
+              name: analysis.name,
+              createdAt: analysis.createdAt,
+              parameters: analysis.parameters,
+            }
+          : {
+              id: analysisId,
+              name: "Analysis",
+              createdAt: new Date().toISOString(),
+              parameters: {
+                pricing: true,
+                features: true,
+                marketing: true,
+                audience: true,
+                techStack: true,
+                content: true,
+                social: true,
+                reviews: true,
+              },
+            },
+        channels,
+        prompt,
+        competitors: selectedCompetitors.map((c) => ({
+          id: c.id,
+          name: c.name,
+          website_url: c.website_url ?? null,
+        })),
+      };
       const res = await fetch("/api/trigger-content-workflow", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "social_content_from_results",
-          analysis: {
-            id: analysis.id,
-            name: analysis.name,
-            createdAt: analysis.createdAt,
-            parameters: analysis.parameters,
-          },
-          channels,
-          prompt,
-          competitors: selectedCompetitors.map((c) => ({
-            id: c.id,
-            name: c.name,
-            website_url: c.website_url ?? null,
-          })),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -124,7 +128,7 @@ export default function ContentFromResultsPage() {
         type: "success",
         message: "Content is being generated. Taking you to the view…",
       });
-      window.location.href = `/results/${analysisId}/content/waiting`;
+      router.push(`/results/${analysisId}/content/waiting`);
       return;
     } catch (e) {
       console.error("Failed to call social content webhook", e);
@@ -150,7 +154,7 @@ export default function ContentFromResultsPage() {
           </p>
         </div>
         <div className="no-print flex items-center gap-2">
-          <Pill color="blue">Analysis: {analysis.name}</Pill>
+          <Pill color="blue">Analysis: {analysis?.name ?? analysisId}</Pill>
         </div>
       </header>
 
