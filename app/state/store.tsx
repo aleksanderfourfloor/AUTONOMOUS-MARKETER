@@ -3,10 +3,16 @@
 import * as React from "react";
 import type { AnalysisParameters, AnalysisRun, AppState, Competitor } from "./types";
 import { DEFAULT_PARAMETERS, MOCK_COMPETITORS, makeMockAnalysis } from "./mockData";
+import { BACKEND_ENABLED } from "../lib/config";
+import { listCompetitors } from "../lib/api";
+import { mapApiCompetitorToStore } from "../lib/mappers";
 
 type Action =
   | { type: "competitor/add"; payload: Omit<Competitor, "id"> }
   | { type: "competitor/bulkAdd"; payload: Omit<Competitor, "id">[] }
+  | { type: "competitor/replaceAll"; payload: { items: Competitor[] } }
+  | { type: "competitor/update"; payload: { id: number; patch: Partial<Omit<Competitor, "id">> } }
+  | { type: "competitor/delete"; payload: { id: number } }
   | { type: "competitor/selectToggle"; payload: { id: number } }
   | { type: "competitor/selectAll"; payload: { ids: number[] } }
   | {
@@ -50,6 +56,34 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         competitors: [...created, ...state.competitors],
+      };
+    }
+    case "competitor/replaceAll": {
+      const nextIds = new Set(action.payload.items.map((c) => c.id));
+      return {
+        ...state,
+        competitors: action.payload.items,
+        selectedCompetitorIds: state.selectedCompetitorIds.filter((id) =>
+          nextIds.has(id)
+        ),
+      };
+    }
+    case "competitor/update": {
+      return {
+        ...state,
+        competitors: state.competitors.map((c) =>
+          c.id === action.payload.id ? { ...c, ...action.payload.patch } : c
+        ),
+      };
+    }
+    case "competitor/delete": {
+      const next = state.competitors.filter((c) => c.id !== action.payload.id);
+      return {
+        ...state,
+        competitors: next,
+        selectedCompetitorIds: state.selectedCompetitorIds.filter(
+          (id) => id !== action.payload.id
+        ),
       };
     }
     case "competitor/selectToggle": {
@@ -102,6 +136,9 @@ function reducer(state: AppState, action: Action): AppState {
 type AppStoreContextValue = AppState & {
   addCompetitor: (c: Omit<Competitor, "id">) => void;
   bulkAddCompetitors: (items: Omit<Competitor, "id">[]) => void;
+  replaceCompetitors: (items: Competitor[]) => void;
+  updateCompetitorLocal: (id: number, patch: Partial<Omit<Competitor, "id">>) => void;
+  deleteCompetitorLocal: (id: number) => void;
   toggleSelectedCompetitor: (id: number) => void;
   selectAllCompetitors: (ids: number[]) => void;
   createAnalysisDraft: (args: {
@@ -118,12 +155,40 @@ const AppStoreContext = React.createContext<AppStoreContextValue | null>(null);
 export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = React.useReducer(reducer, initialState);
 
+  // Global sync: if backend is enabled, load competitors once so sidebar + pages reflect FastAPI
+  React.useEffect(() => {
+    if (!BACKEND_ENABLED) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await listCompetitors();
+        if (!cancelled) {
+          dispatch({
+            type: "competitor/replaceAll",
+            payload: { items: data.items.map(mapApiCompetitorToStore) },
+          });
+        }
+      } catch (e) {
+        console.error("Failed to auto-load competitors from backend", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const value: AppStoreContextValue = React.useMemo(
     () => ({
       ...state,
       addCompetitor: (c) => dispatch({ type: "competitor/add", payload: c }),
       bulkAddCompetitors: (items) =>
         dispatch({ type: "competitor/bulkAdd", payload: items }),
+      replaceCompetitors: (items) =>
+        dispatch({ type: "competitor/replaceAll", payload: { items } }),
+      updateCompetitorLocal: (id, patch) =>
+        dispatch({ type: "competitor/update", payload: { id, patch } }),
+      deleteCompetitorLocal: (id) =>
+        dispatch({ type: "competitor/delete", payload: { id } }),
       toggleSelectedCompetitor: (id) =>
         dispatch({ type: "competitor/selectToggle", payload: { id } }),
       selectAllCompetitors: (ids) =>

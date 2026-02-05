@@ -1,9 +1,16 @@
 export type Competitor = {
   id: number;
   name: string;
-  website: string;
-  tags: string[];
-  notes: string;
+  website_url?: string | null;
+  twitter_url?: string | null;
+  instagram_url?: string | null;
+  facebook_url?: string | null;
+  reddit_url?: string | null;
+  discord_url?: string | null;
+  industry?: string | null;
+  description?: string | null;
+  logo_url?: string | null;
+  status: "active" | "inactive";
 };
 
 export type AnalysisParameters = {

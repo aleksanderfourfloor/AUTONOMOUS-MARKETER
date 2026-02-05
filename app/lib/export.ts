@@ -1,13 +1,33 @@
 import type { Competitor } from "../state/types";
 
 export function downloadCompetitorsCsv(competitors: Competitor[]) {
-  const header = ["id", "name", "website", "tags", "notes"];
+  const header = [
+    "id",
+    "name",
+    "website_url",
+    "twitter_url",
+    "instagram_url",
+    "facebook_url",
+    "reddit_url",
+    "discord_url",
+    "industry",
+    "description",
+    "logo_url",
+    "status",
+  ];
   const rows = competitors.map((c) => [
     c.id,
     c.name,
-    c.website,
-    c.tags.join("|"),
-    c.notes,
+    c.website_url ?? "",
+    c.twitter_url ?? "",
+    c.instagram_url ?? "",
+    c.facebook_url ?? "",
+    c.reddit_url ?? "",
+    c.discord_url ?? "",
+    c.industry ?? "",
+    c.description ?? "",
+    c.logo_url ?? "",
+    c.status,
   ]);
 
   const csv = [header, ...rows]

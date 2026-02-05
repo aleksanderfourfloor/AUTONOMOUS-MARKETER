@@ -159,7 +159,7 @@ export default function AnalysisPage() {
                 <div key={c.id} className="rounded-md border border-zinc-200 p-2">
                   <div className="text-sm font-semibold text-zinc-900">{c.name}</div>
                   <div className="mt-1 text-xs text-zinc-500">
-                    {c.website ? c.website.replace(/^https?:\/\//, "") : "No website"}
+                    {c.website_url ? c.website_url.replace(/^https?:\/\//, "") : "No website"}
                   </div>
                 </div>
               ))

@@ -1,7 +1,7 @@
 import type { Competitor } from "../state/types";
 
 export function parseCompetitorCsv(text: string): Omit<Competitor, "id">[] {
-  // Expected columns: name, website, tags, notes
+  // Expected columns (compatible with backend): name, website_url (or website), industry, description, status
   // Minimal CSV parsing: handles quoted values and commas inside quotes.
   const rows = splitCsvRows(text);
   if (rows.length === 0) return [];
@@ -9,9 +9,11 @@ export function parseCompetitorCsv(text: string): Omit<Competitor, "id">[] {
   const header = rows[0].map((h) => normalizeHeader(h));
   const idx = {
     name: header.indexOf("name"),
+    website_url: header.indexOf("website_url"),
     website: header.indexOf("website"),
-    tags: header.indexOf("tags"),
-    notes: header.indexOf("notes"),
+    industry: header.indexOf("industry"),
+    description: header.indexOf("description"),
+    status: header.indexOf("status"),
   };
 
   const items: Omit<Competitor, "id">[] = [];
@@ -19,44 +21,38 @@ export function parseCompetitorCsv(text: string): Omit<Competitor, "id">[] {
     const row = rows[i];
     const name = get(row, idx.name).trim();
     if (!name) continue;
-    const website = get(row, idx.website).trim();
-    const tagsRaw = get(row, idx.tags).trim();
-    const notes = get(row, idx.notes).trim();
-    const tags = tagsRaw
-      ? tagsRaw
-          .split(/[;,|]/)
-          .map((t) => t.trim())
-          .filter(Boolean)
-      : [];
+    const website_url = (get(row, idx.website_url) || get(row, idx.website)).trim();
+    const industry = get(row, idx.industry).trim();
+    const description = get(row, idx.description).trim();
+    const statusRaw = get(row, idx.status).trim().toLowerCase();
+    const status: "active" | "inactive" =
+      statusRaw === "inactive" ? "inactive" : "active";
     items.push({
       name,
-      website,
-      tags,
-      notes,
+      website_url: website_url || null,
+      industry: industry || null,
+      description: description || null,
+      status,
     });
   }
   return items;
 }
 
 export function parseBulkLines(text: string): Omit<Competitor, "id">[] {
-  // Each line: Name, Website, tags(optional), notes(optional)
+  // Each line: Name, Website, Industry(optional), Description(optional)
   return text
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean)
     .map((line) => {
       const parts = line.split(",").map((p) => p.trim());
-      const [name, website = "", tags = "", notes = ""] = parts;
+      const [name, website_url = "", industry = "", description = ""] = parts;
       return {
         name,
-        website,
-        tags: tags
-          ? tags
-              .split(/[;,|]/)
-              .map((t) => t.trim())
-              .filter(Boolean)
-          : [],
-        notes,
+        website_url: website_url || null,
+        industry: industry || null,
+        description: description || null,
+        status: "active" as const,
       };
     })
     .filter((c) => c.name.length > 0);

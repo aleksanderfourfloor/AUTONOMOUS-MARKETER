@@ -13,8 +13,14 @@ export type ApiCompetitor = {
   id: number;
   name: string;
   website_url?: string | null;
+  twitter_url?: string | null;
+  instagram_url?: string | null;
+  facebook_url?: string | null;
+  reddit_url?: string | null;
+  discord_url?: string | null;
   industry?: string | null;
   description?: string | null;
+  logo_url?: string | null;
   status?: string;
   created_at?: string;
   updated_at?: string;
@@ -23,6 +29,11 @@ export type ApiCompetitor = {
 export type ApiCompetitorCreate = {
   name: string;
   website_url?: string | null;
+  twitter_url?: string | null;
+  instagram_url?: string | null;
+  facebook_url?: string | null;
+  reddit_url?: string | null;
+  discord_url?: string | null;
   industry?: string | null;
   description?: string | null;
   logo_url?: string | null;
@@ -107,6 +118,37 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+async function apiFetchVoid(path: string, init?: RequestInit): Promise<void> {
+  assertBackendEnabled();
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`API error ${res.status}: ${text || res.statusText}`);
+  }
+}
+
+async function apiFetchForm<T>(path: string, init?: RequestInit): Promise<T> {
+  assertBackendEnabled();
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    // DO NOT set Content-Type here; browser will set correct multipart boundary.
+    headers: {
+      ...(init?.headers ?? {}),
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`API error ${res.status}: ${text || res.statusText}`);
+  }
+  return (await res.json()) as T;
+}
+
 export async function listCompetitors(): Promise<ApiCompetitorList> {
   return await apiFetch<ApiCompetitorList>("/competitors");
 }
@@ -120,12 +162,37 @@ export async function createCompetitor(
   });
 }
 
+export async function updateCompetitor(
+  competitorId: number,
+  payload: Partial<ApiCompetitorCreate>
+): Promise<ApiCompetitor> {
+  return await apiFetch<ApiCompetitor>(`/competitors/${competitorId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteCompetitor(competitorId: number): Promise<void> {
+  await apiFetchVoid(`/competitors/${competitorId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function bulkCreateCompetitors(
   competitors: ApiCompetitorCreate[]
 ): Promise<ApiCompetitorList> {
   return await apiFetch<ApiCompetitorList>("/competitors/bulk", {
     method: "POST",
     body: JSON.stringify({ competitors }),
+  });
+}
+
+export async function uploadCompetitorsCsv(file: File): Promise<ApiCompetitorList> {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  return await apiFetchForm<ApiCompetitorList>("/competitors/bulk/csv", {
+    method: "POST",
+    body: form,
   });
 }
 
