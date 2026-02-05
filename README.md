@@ -5,6 +5,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 First, run the development server:
 
 ```bash
+npm install
 npm run dev
 # or
 yarn dev
@@ -16,7 +17,24 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## App pages
+
+- `app/page.tsx`: Dashboard (quick stats + recent analyses)
+- `app/competitors/page.tsx`: Add competitors (manual, bulk paste, CSV upload)
+- `app/analysis/page.tsx`: Configure + run analysis (demo progress)
+- `app/results/[analysisId]/page.tsx`: Results (tabs, comparison table, charts, feature matrix, insights, export/share)
+
+## Backend integration (FastAPI)
+
+By default this frontend runs with **example data** stored in a small React Context store.
+
+To integrate with your FastAPI backend later:
+
+- Copy `env.example` to an env file and set:
+  - `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`
+- Use the helper functions in `app/lib/api.ts` (e.g. `listCompetitors`, `startAnalysis`, `getInsights`).
+
+Note: your backend must allow CORS for `http://localhost:3000` if you run frontend + backend locally.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
