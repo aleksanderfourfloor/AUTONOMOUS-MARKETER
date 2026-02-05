@@ -13,7 +13,7 @@ import {
   makeMockAnalysis,
 } from "./mockData";
 import { BACKEND_ENABLED } from "../lib/config";
-import { listCompetitors } from "../lib/api";
+import { listCompetitors, type ApiCompetitor } from "../lib/api";
 import { mapApiCompetitorToStore } from "../lib/mappers";
 
 type Action =
@@ -192,7 +192,8 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // When backend is disabled, hydrate competitors from the local JSON-backed API
+  // When backend is disabled, hydrate competitors from the local JSON-backed API.
+  // Replace with whatever the API returns (even empty) so we never show mock data when real API is used.
   React.useEffect(() => {
     if (BACKEND_ENABLED) return;
     let cancelled = false;
@@ -200,12 +201,13 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       try {
         const res = await fetch("/api/competitors");
         if (!res.ok) return;
-        const data = (await res.json()) as { items?: any[] };
-        if (!cancelled && data.items && data.items.length) {
+        const data = (await res.json()) as { items?: ApiCompetitor[] };
+        const items = Array.isArray(data?.items) ? data.items : [];
+        if (!cancelled) {
           dispatch({
             type: "competitor/replaceAll",
             payload: {
-              items: data.items.map((c: any) => mapApiCompetitorToStore(c)),
+              items: items.map((c) => mapApiCompetitorToStore(c)),
             },
           });
         }
