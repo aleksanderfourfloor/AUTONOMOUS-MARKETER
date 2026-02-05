@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Button, Card, CardTitle } from "../../../../components/ui";
+import { Button, Card, CardTitle } from "../../../../../components/ui";
 
 type Stored = {
   id: string;

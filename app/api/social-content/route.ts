@@ -3,6 +3,23 @@ import { createSocialContent } from "@/app/lib/social-content-store";
 
 export const runtime = "nodejs";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400",
+};
+
+/**
+ * Allow CORS preflight so n8n or other origins can POST.
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+}
+
 /**
  * POST /api/social-content
  * Body: { analysisId: string, content: string | object, source?: string }
@@ -21,13 +38,13 @@ export async function POST(request: NextRequest) {
     if (!analysisId || typeof analysisId !== "string") {
       return NextResponse.json(
         { detail: "analysisId (string) is required" },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
     if (content === undefined) {
       return NextResponse.json(
         { detail: "content is required" },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
@@ -48,13 +65,22 @@ export async function POST(request: NextRequest) {
         viewUrl,
         createdAt: record.created_at,
       },
-      { status: 201, headers: { "Content-Type": "application/json" } }
+      {
+        status: 201,
+        headers: {
+          "Content-Type": "application/json",
+          ...CORS_HEADERS,
+        },
+      }
     );
   } catch (e) {
     console.error("POST /api/social-content", e);
     return NextResponse.json(
       { detail: e instanceof Error ? e.message : "Internal error" },
-      { status: 500 }
+      {
+        status: 500,
+        headers: CORS_HEADERS,
+      }
     );
   }
 }
