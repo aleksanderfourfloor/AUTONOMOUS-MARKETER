@@ -79,34 +79,26 @@ export default function ContentFromResultsPage({
     setResponseText(null);
     setSavedViewUrl(null);
     try {
-      const res = await fetch(
-        "https://itsabbas-ataie.app.n8n.cloud/webhook/9ab24b1d-7785-43a3-9c20-907e18ba31c5",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "social_content_from_results",
-            analysis: {
-              id: analysis.id,
-              name: analysis.name,
-              createdAt: analysis.createdAt,
-              parameters: analysis.parameters,
-            },
-            channels,
-            prompt,
-            competitors: selectedCompetitors.map((c) => ({
-              id: c.id,
-              name: c.name,
-              website_url: c.website_url ?? null,
-            })),
-            contentStoreUrl:
-              typeof window !== "undefined"
-                ? `${window.location.origin}/api/social-content`
-                : "/api/social-content",
-            analysisIdForStore: analysisId,
-          }),
-        }
-      );
+      const res = await fetch("/api/trigger-content-workflow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "social_content_from_results",
+          analysis: {
+            id: analysis.id,
+            name: analysis.name,
+            createdAt: analysis.createdAt,
+            parameters: analysis.parameters,
+          },
+          channels,
+          prompt,
+          competitors: selectedCompetitors.map((c) => ({
+            id: c.id,
+            name: c.name,
+            website_url: c.website_url ?? null,
+          })),
+        }),
+      });
 
       const contentType = res.headers.get("content-type") ?? "";
       if (!res.ok) {
