@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Button, Card, CardTitle, Input, Pill, Textarea } from "../components/ui";
+import {
+  Button,
+  Card,
+  CardTitle,
+  Input,
+  Pill,
+  Textarea,
+} from "../components/ui";
 import { parseBulkLines, parseCompetitorCsv } from "../lib/csv";
 import { downloadCompetitorsCsv } from "../lib/export";
 import { useToast } from "../state/toast";
@@ -16,7 +23,10 @@ import {
 } from "../lib/api";
 import type { Competitor } from "../state/types";
 import type { ApiCompetitor } from "../lib/api";
-import { mapApiCompetitorToStore, mapStoreDraftToApiCreate } from "../lib/mappers";
+import {
+  mapApiCompetitorToStore,
+  mapStoreDraftToApiCreate,
+} from "../lib/mappers";
 
 export default function CompetitorsPage() {
   const {
@@ -102,13 +112,17 @@ export default function CompetitorsPage() {
   }, [drawerOpen]);
 
   function updateDraft(i: number, patch: Partial<Draft>) {
-    setDrafts((prev) => prev.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
+    setDrafts((prev) =>
+      prev.map((d, idx) => (idx === i ? { ...d, ...patch } : d))
+    );
   }
   function addDraft() {
     setDrafts((prev) => [...prev, emptyDraft()]);
   }
   function removeDraft(i: number) {
-    setDrafts((prev) => (prev.length === 1 ? prev : prev.filter((_, idx) => idx !== i)));
+    setDrafts((prev) =>
+      prev.length === 1 ? prev : prev.filter((_, idx) => idx !== i)
+    );
   }
 
   async function submitDrafts() {
@@ -116,7 +130,10 @@ export default function CompetitorsPage() {
       .map(cleanDraft)
       .filter((d) => d.name.trim().length > 0);
     if (!items.length) {
-      toast.push({ type: "error", message: "Add at least one competitor name." });
+      toast.push({
+        type: "error",
+        message: "Add at least one competitor name.",
+      });
       return;
     }
     try {
@@ -135,6 +152,19 @@ export default function CompetitorsPage() {
           if (items.length === 1) addCompetitor(items[0]);
           else bulkAddCompetitors(items);
         }
+
+        // Also persist new competitors to the temporary JSON-backed API
+        if (drawerMode === "add") {
+          await Promise.all(
+            items.map((item) =>
+              fetch("/api/competitors", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(item),
+              })
+            )
+          );
+        }
       }
       toast.push({
         type: "success",
@@ -148,7 +178,10 @@ export default function CompetitorsPage() {
       console.error(err);
       toast.push({
         type: "error",
-        message: drawerMode === "edit" ? "Could not update competitor" : "Could not add competitors",
+        message:
+          drawerMode === "edit"
+            ? "Could not update competitor"
+            : "Could not add competitors",
       });
     } finally {
       setLoading(false);
@@ -180,7 +213,10 @@ export default function CompetitorsPage() {
   async function onBulkAdd() {
     const items = parseBulkLines(bulkText);
     if (!items.length) {
-      toast.push({ type: "error", message: "Nothing to import. Add at least one line." });
+      toast.push({
+        type: "error",
+        message: "Nothing to import. Add at least one line.",
+      });
       return;
     }
     try {
@@ -200,7 +236,10 @@ export default function CompetitorsPage() {
         bulkAddCompetitors(items);
       }
       setBulkText("");
-      toast.push({ type: "success", message: `Imported ${items.length} competitors` });
+      toast.push({
+        type: "success",
+        message: `Imported ${items.length} competitors`,
+      });
     } catch (err) {
       console.error(err);
       toast.push({ type: "error", message: "Bulk import failed" });
@@ -215,7 +254,10 @@ export default function CompetitorsPage() {
       if (BACKEND_ENABLED) {
         const data = await uploadCompetitorsCsv(file);
         replaceCompetitors(data.items.map(mapApiCompetitorToStore));
-        toast.push({ type: "success", message: `Imported ${data.total} competitors from CSV (backend)` });
+        toast.push({
+          type: "success",
+          message: `Imported ${data.total} competitors from CSV (backend)`,
+        });
       } else {
         const text = await file.text();
         const items = parseCompetitorCsv(text);
@@ -228,7 +270,10 @@ export default function CompetitorsPage() {
           return;
         }
         bulkAddCompetitors(items);
-        toast.push({ type: "success", message: `Imported ${items.length} competitors from CSV` });
+        toast.push({
+          type: "success",
+          message: `Imported ${items.length} competitors from CSV`,
+        });
       }
     } catch (err) {
       console.error(err);
@@ -250,15 +295,25 @@ export default function CompetitorsPage() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Competitors List</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Competitors List
+          </h1>
           <p className="mt-1 text-sm text-zinc-500">
-            {BACKEND_ENABLED ? "Synced with FastAPI" : "Example data mode"} • {competitors.length} total
+            {BACKEND_ENABLED ? "Synced with FastAPI" : "Example data mode"} •{" "}
+            {competitors.length} total
             {loading ? " • syncing..." : ""}
           </p>
         </div>
         <div className="no-print flex items-center gap-2">
-          {BACKEND_ENABLED ? <Pill color="emerald">Backend: ON</Pill> : <Pill color="amber">Backend: OFF</Pill>}
-          <Button variant="secondary" onClick={() => downloadCompetitorsCsv(competitors)}>
+          {BACKEND_ENABLED ? (
+            <Pill color="emerald">Backend: ON</Pill>
+          ) : (
+            <Pill color="amber">Backend: OFF</Pill>
+          )}
+          <Button
+            variant="secondary"
+            onClick={() => downloadCompetitorsCsv(competitors)}
+          >
             Download CSV
           </Button>
           <Button onClick={openDrawer}>+ Add New</Button>
@@ -271,7 +326,9 @@ export default function CompetitorsPage() {
             <CardTitle>Competitors</CardTitle>
             <div className="no-print flex gap-2">
               <Button variant="secondary" onClick={toggleAll}>
-                {selectedCompetitorIds.length === competitors.length ? "Clear selection" : "Select all"}
+                {selectedCompetitorIds.length === competitors.length
+                  ? "Clear selection"
+                  : "Select all"}
               </Button>
             </div>
           </div>
@@ -284,7 +341,9 @@ export default function CompetitorsPage() {
                   key={c.id}
                   className={[
                     "w-full rounded-lg border p-4 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500",
-                    selected ? "border-blue-200 bg-blue-50/70" : "border-zinc-200 bg-white hover:bg-zinc-50",
+                    selected
+                      ? "border-blue-200 bg-blue-50/70"
+                      : "border-zinc-200 bg-white hover:bg-zinc-50",
                   ].join(" ")}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -297,7 +356,9 @@ export default function CompetitorsPage() {
                           className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
                           aria-label={`Select ${c.name}`}
                         />
-                        <div className="truncate text-lg font-semibold text-zinc-900">{c.name}</div>
+                        <div className="truncate text-lg font-semibold text-zinc-900">
+                          {c.name}
+                        </div>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
                         {c.website_url ? (
@@ -307,7 +368,9 @@ export default function CompetitorsPage() {
                         ) : (
                           <span>—</span>
                         )}
-                        {c.industry ? <Pill color="zinc">{c.industry}</Pill> : null}
+                        {c.industry ? (
+                          <Pill color="zinc">{c.industry}</Pill>
+                        ) : null}
                       </div>
                       {c.description ? (
                         <div className="mt-2 text-sm text-zinc-600 line-clamp-2">
@@ -316,7 +379,9 @@ export default function CompetitorsPage() {
                       ) : null}
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <Pill color={c.status === "active" ? "emerald" : "zinc"}>{c.status}</Pill>
+                      <Pill color={c.status === "active" ? "emerald" : "zinc"}>
+                        {c.status}
+                      </Pill>
                       <div className="no-print flex gap-2">
                         <button
                           type="button"
@@ -356,16 +421,24 @@ export default function CompetitorsPage() {
             </label>
 
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Bulk paste</div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                Bulk paste
+              </div>
               <textarea
                 className="mt-2 w-full rounded-md border border-zinc-300 px-2.5 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 rows={6}
                 value={bulkText}
                 onChange={(e) => setBulkText(e.target.value)}
-                placeholder={"Name, Website, Industry, Description\nSuno AI, https://suno.com, AI, Music generation"}
+                placeholder={
+                  "Name, Website, Industry, Description\nSuno AI, https://suno.com, AI, Music generation"
+                }
               />
               <div className="mt-2 no-print">
-                <Button variant="secondary" onClick={() => void onBulkAdd()} disabled={loading}>
+                <Button
+                  variant="secondary"
+                  onClick={() => void onBulkAdd()}
+                  disabled={loading}
+                >
                   {loading ? "Importing..." : "Import lines"}
                 </Button>
               </div>
@@ -384,17 +457,23 @@ export default function CompetitorsPage() {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label={drawerMode === "edit" ? "Edit competitor" : "Add competitors"}
+            aria-label={
+              drawerMode === "edit" ? "Edit competitor" : "Add competitors"
+            }
             className="absolute right-0 top-0 h-full w-full max-w-xl bg-white shadow-2xl"
           >
             <div className="flex h-full flex-col">
               <div className="no-print flex items-center justify-between border-b border-zinc-200 px-5 py-4">
                 <div>
                   <div className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-                    {drawerMode === "edit" ? "Edit competitor" : "Step 2: Add competitors"}
+                    {drawerMode === "edit"
+                      ? "Edit competitor"
+                      : "Step 2: Add competitors"}
                   </div>
                   <div className="mt-1 text-lg font-semibold text-zinc-900">
-                    {drawerMode === "edit" ? "Update competitor details" : "Add competitor details"}
+                    {drawerMode === "edit"
+                      ? "Update competitor details"
+                      : "Add competitor details"}
                   </div>
                 </div>
                 <button
@@ -408,7 +487,10 @@ export default function CompetitorsPage() {
               <div className="flex-1 overflow-y-auto px-5 py-4">
                 <div className="space-y-4">
                   {drafts.map((d, i) => (
-                    <div key={i} className="rounded-lg border border-zinc-200 p-4">
+                    <div
+                      key={i}
+                      className="rounded-lg border border-zinc-200 p-4"
+                    >
                       <div className="grid gap-3 md:grid-cols-2">
                         <Input
                           label="Competitor name *"
@@ -484,12 +566,18 @@ export default function CompetitorsPage() {
                             type="url"
                           />
                           <label className="block">
-                            <div className="mb-1 text-xs font-medium text-zinc-600">Status</div>
+                            <div className="mb-1 text-xs font-medium text-zinc-600">
+                              Status
+                            </div>
                             <select
                               className="w-full rounded-md border border-zinc-300 px-2.5 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                               value={d.status}
                               onChange={(e) =>
-                                updateDraft(i, { status: e.target.value as "active" | "inactive" })
+                                updateDraft(i, {
+                                  status: e.target.value as
+                                    | "active"
+                                    | "inactive",
+                                })
                               }
                             >
                               <option value="active">active</option>
@@ -508,7 +596,9 @@ export default function CompetitorsPage() {
                           >
                             Remove
                           </button>
-                          <div className="text-xs text-zinc-400">Competitor #{i + 1}</div>
+                          <div className="text-xs text-zinc-400">
+                            Competitor #{i + 1}
+                          </div>
                         </div>
                       ) : null}
                     </div>
@@ -523,21 +613,37 @@ export default function CompetitorsPage() {
                       + Add another
                     </Button>
                   ) : (
-                    <Button variant="secondary" onClick={() => void onDeleteEditing()} disabled={loading}>
+                    <Button
+                      variant="secondary"
+                      onClick={() => void onDeleteEditing()}
+                      disabled={loading}
+                    >
                       Delete
                     </Button>
                   )}
                   <div className="flex gap-2">
-                    <Button variant="secondary" onClick={closeDrawer} disabled={loading}>
+                    <Button
+                      variant="secondary"
+                      onClick={closeDrawer}
+                      disabled={loading}
+                    >
                       Cancel
                     </Button>
-                    <Button onClick={() => void submitDrafts()} disabled={loading}>
-                      {loading ? "Saving..." : drawerMode === "edit" ? "Save changes" : "Save competitors"}
+                    <Button
+                      onClick={() => void submitDrafts()}
+                      disabled={loading}
+                    >
+                      {loading
+                        ? "Saving..."
+                        : drawerMode === "edit"
+                        ? "Save changes"
+                        : "Save competitors"}
                     </Button>
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-zinc-500">
-                  Tip: you can leave optional fields blank. Press <span className="font-semibold">Esc</span> to close.
+                  Tip: you can leave optional fields blank. Press{" "}
+                  <span className="font-semibold">Esc</span> to close.
                 </p>
               </div>
             </div>
@@ -563,4 +669,3 @@ function cleanDraft(d: Omit<Competitor, "id">): Omit<Competitor, "id"> {
     status: d.status,
   };
 }
-
